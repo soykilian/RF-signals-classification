@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers, optimizers
-from tensorflow.keras.layers import Input, Dense, Activation, ZeroPadding2D, BatchNormalization, Flatten, Conv2D, Conv1D,Convolution2D, Bidirectional, LSTM, GRU
+from tensorflow.keras.layers import Input, Dense, Activation, ZeroPadding2D, BatchNormalization, Flatten, Conv2D, Conv1D,Convolution2D, Bidirectional, LSTM, GRU, Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 import sklearn, json
@@ -17,6 +17,8 @@ with h5py.File(dataset_path + 'X_train.mat', 'r') as f:
 print(X_train.shape)
 with h5py.File(dataset_path + 'X_test.mat', 'r') as f:
     X_test = np.array(f['X_test']).T
+print("Signals data loaded")
+print("---------------------------------------------------")
 lbl_train = io.loadmat(dataset_path + 'lbl_train.mat')['lbl_train']
 lbl_test = io.loadmat(dataset_path + 'lbl_test.mat')['lbl_test']
 
@@ -40,11 +42,13 @@ X_test[:, :, 1] = np.abs(I_t + 1j * Q_t)
 np.random.seed(2022)
 X_train, Y_train, lbl_train = sklearn.utils.shuffle(X_train[:], Y_train[:], lbl_train[:], random_state=2022)
 X_test, Y_test, lbl_test = sklearn.utils.shuffle(X_test[:], Y_test[:], lbl_test[:], random_state=2022)
+print("Data shuffled")
+print("---------------------------------------------------")
 
 
 def lstm_network(input_shape: int) -> Model:
     X_input = Input(input_shape)
-    X = LSTM(128, return_sequences=True, name='lstm0')(X_input)
+    X = LSTM(128, return_sequences=True, name='lstm0', dropout=0.3)(X_input)
     X = LSTM(128, name='lstm1')(X)
     X = Dense(23, activation='softmax', name='fc0')(X)
     model = Model(inputs=X_input, outputs=X)
@@ -52,10 +56,14 @@ def lstm_network(input_shape: int) -> Model:
     return model
 
 model = lstm_network(X_train.shape[1:])
+print("Model initiated.")
+print("---------------------------------------------------")
 c = [ModelCheckpoint(filepath='/mnt/Data/gmr/pruebas/bestmodel.h5', monitor='cal_loss', save_best_only=True)]
-model.compile(optimizer=optimizers.Adam(10e-3), loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=optimizers.Adam(1e-4), loss='categorical_crossentropy', metrics=['accuracy'])
+print("Optimizer added.")
+print("---------------------------------------------------")
 
-def Train(model: Model, data: Dict, n_epochs: int = 100, batch_size: int = 100):
+def Train(model: Model, data: Dict, n_epochs: int = 500, batch_size: int = 150):
     history = model.fit(data['X_train'], data['Y_train'], epochs=n_epochs, batch_size=batch_size, callbacks=c,
                         validation_data=(data['X_test'], data['Y_test']))
     with open(path + 'history_rnn.json', 'w') as f:
