@@ -277,12 +277,8 @@ else:
     with open(output_path +'history_rnn.json', 'r') as f:
             history = json.load(f)
 
-
 # In[33]:
-
-
 model.load_weights(output_path +'best_model.h5')
-
 
 # In[ ]:
 

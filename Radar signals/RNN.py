@@ -52,18 +52,19 @@ from clr_callback import *
 
 classes = ['LFM','2FSK','4FSK','8FSK', 'Costas','2PSK','4PSK','8PSK','Barker','Huffman','Frank','P1','P2','P3','P4','Px','Zadoff-Chu','T1','T2','T3','T4','NM','ruido']
 dt = np.dtype(float)
+dataset_path = '/mnt/Data/gmr/Dataset/'
 
-with h5py.File('../../Datasets/radar/Interpolation_orthogonal/X_train.mat', 'r') as f:
+with h5py.File(dataset_path + 'X_train.mat', 'r') as f:
     X_train = np.array(f['X_train']).T
-with h5py.File('../../Datasets/radar/Interpolation_orthogonal/X_test.mat', 'r') as f:
+with h5py.File(dataset_path + 'X_test.mat', 'r') as f:
     X_test = np.array(f['X_test']).T
-Y_train = sio.loadmat('../../Datasets/radar/Interpolation_orthogonal/Y_train.mat')
+Y_train = sio.loadmat(dataset_path + 'Y_train.mat')
 Y_train = Y_train['Y_train']
-Y_test = sio.loadmat('../../Datasets/radar/Interpolation_orthogonal/Y_test.mat')
+Y_test = sio.loadmat(dataset_path + 'Y_test.mat')
 Y_test = Y_test['Y_test']
-lbl_train = sio.loadmat('../../Datasets/radar/Interpolation_orthogonal/lbl_train.mat')
+lbl_train = sio.loadmat(dataset_path + 'lbl_train.mat')
 lbl_train = lbl_train['lbl_train']
-lbl_test = sio.loadmat('../../Datasets/radar/Interpolation_orthogonal/lbl_test.mat')
+lbl_test = sio.loadmat(dataset_path + 'lbl_test.mat')
 lbl_test = lbl_test['lbl_test']
 
 
@@ -104,20 +105,13 @@ if AP:
     del I_te
     del Q_te
     del X_te
-    
-
-
 # In[5]:
-
-
 print("X train shape: ", X_train.shape)
 print("X test shape: ", X_test.shape)
 print("Y train shape: ", Y_train.shape)
 print("Y test shape: ", Y_test.shape)
 print("Label train shape: ", lbl_train.shape)
 print("Label test shape: ", lbl_test.shape)
-
-
 # In[6]:
 
 
@@ -187,15 +181,9 @@ model = RecComModel(X_train.shape[1:])
 
 
 output_path = '../Results/Radar_RNN/interpolation_orthogonal/normal_lr/'
-
-
 #clr_triangular = CyclicLR(mode='triangular', base_lr=1e-7, max_lr=1e-3, step_size= 4 * (X_train.shape[0] // 500))
-
 c=[ModelCheckpoint(filepath= output_path +'best_model.h5', monitor='val_loss', save_best_only=True)]
-
 model.compile(optimizer=optimizers.Adam(1e-3), loss='categorical_crossentropy', metrics=['accuracy'])
-
-
 Train = True
 
 if Train:
@@ -288,10 +276,7 @@ def getFontColor(value):
     else:
         return "white"
 
-
-
 # In[ ]:
-
 
 acc={}
 snrs = [-12,-10,-8,-6,-4,-2,0,2,4,6,8,10,12,14,16,18,20]
