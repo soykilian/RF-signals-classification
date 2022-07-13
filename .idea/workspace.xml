@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="d174f152-3422-4098-b61e-76ef787685ac" name="Changes" comment="">
       <change afterPath="$PROJECT_DIR$/includes/clr_callback.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/trials_resnet.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/trials_LSTM.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/trials_LSTM.ipynb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/triasl_REsNet.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/triasl_REsNet.ipynb" afterDir="false" />
@@ -109,7 +110,7 @@
       <workItem from="1657706269268" duration="1278000" />
       <workItem from="1657707611782" duration="232000" />
       <workItem from="1657708314984" duration="23000" />
-      <workItem from="1657708343969" duration="2075000" />
+      <workItem from="1657708343969" duration="2344000" />
     </task>
     <servers />
   </component>
