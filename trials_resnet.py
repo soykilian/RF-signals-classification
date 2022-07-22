@@ -13,15 +13,15 @@ from typing import Any, Dict
 from includes.clr_callback import *
 import matplotlib.pyplot as plt
 
-path = '/Users/mariavictoriadacostarivas/Documents/GMR/'
-dataset_path = path + 'Dataset/'
+path = '/home/usuario_gmr/gmr/'
+dataset_path = path
 
 with h5py.File(dataset_path +'X_train.mat', 'r') as f:
     X_train = np.array(f['X_train']).T
 print(X_train.shape)
 with h5py.File(dataset_path +'X_test.mat', 'r') as f:
     X_test = np.array(f['X_test']).T
-
+print(X_test.shape)
 lbl_train = io.loadmat(dataset_path + 'lbl_train.mat')['lbl_train']
 lbl_test = io.loadmat(dataset_path + 'lbl_test.mat')['lbl_test']
 print(lbl_test.shape)
@@ -30,6 +30,8 @@ Y_train = io.loadmat(dataset_path + 'Y_train.mat')
 Y_train = Y_train['Y_train']
 Y_test = io.loadmat(dataset_path + 'Y_test.mat')
 Y_test = Y_test['Y_test']
+print(Y_train.shape)
+print(Y_test.shape)
 
 classes = ['LFM', '2FSK', '4FSK', '8FSK', 'Costas', '2PSK', '4PSK', '8PSK', 'Barker', 'Huffman', 'Frank', 'P1', 'P2',
            'P3', 'P4', 'Px', 'Zadoff-Chu', 'T1', 'T2', 'T3', 'T4', 'NM', 'ruido']
@@ -39,8 +41,8 @@ X_train[:, :, 1] = np.arctan(Q_x, I_x) / np.pi
 X_train[:, :, 0] = np.abs(I_x + 1j * Q_x)
 I_t = X_test[:, :, 0]
 Q_t = X_test[:, :, 1]
-X_test[:, :, 0] = np.arctan(Q_t, I_t) / np.pi
-X_test[:, :, 1] = np.abs(I_t + 1j * Q_t)
+X_test[:, :, 1] = np.arctan(Q_t, I_t) / np.pi
+X_test[:, :, 0] = np.abs(I_t + 1j * Q_t)
 np.random.seed(2022)
 X_train, Y_train, lbl_train = sklearn.utils.shuffle(X_train[:], Y_train[:], lbl_train[:], random_state=2022)
 X_test, Y_test, lbl_test = sklearn.utils.shuffle(X_test[:], Y_test[:], lbl_test[:], random_state=2022)
@@ -75,18 +77,23 @@ def res_stack(x, f):
 
 def ResNet(input_shape):
     X_input = Input(input_shape)
+    ####
     x = res_stack(X_input, 32)
     x = res_stack(x, 32)
     x = res_stack(x, 32)
     x = res_stack(x, 32)
     x = res_stack(x, 32)
     x = res_stack(x, 32)
+    ####
     x = Flatten()(x)
+    ####
     x = Dense(128, activation='selu')(x)
     x = AlphaDropout(0.6)(x)
+    ####
     x = Dense(128, activation='selu')(x)
     x = AlphaDropout(0.6)(x)
-    x = Dense(128, activation='softmax')(x)
+    ####
+    x = Dense(23, activation='softmax')(x)
     # Create model. This creates your Keras model instance, you'll use this instance to train/test the model.
     model = Model(inputs = X_input, outputs = x)
     model.summary()
@@ -95,13 +102,13 @@ def ResNet(input_shape):
 
 model = ResNet(X_train.shape[1:])
 output_path = path + 'Results/models'
-clr_triangular = CyclicLR(mode='triangular', base_lr=1e-7, max_lr=1e-3, step_size= 4 * (X_train.shape[0] // 150))
+clr_triangular = CyclicLR(mode='triangular', base_lr=1e-7, max_lr=1e-3, step_size= 4 * (X_train.shape[0] // 500))
 c = [clr_triangular, ModelCheckpoint(filepath= output_path +'best_model.h5', monitor='val_loss', save_best_only=True)]
-model.compile(optimizer=optimizers.Adam(1e-5), loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=optimizers.Adam(1e-7), loss='categorical_crossentropy', metrics=['accuracy'])
 
 Train = True
 if Train:
-    history = model.fit(X_train, Y_train, epochs = 200, batch_size = 150, callbacks = c, validation_data=(X_test, Y_test))
+    history = model.fit(X_train, Y_train, epochs = 300, batch_size = 500, callbacks = c, validation_data=(X_test, Y_test))
     with open(output_path +'history_rnn.json', 'w') as f:
         json.dump(history.history, f)
     model_json = model.to_json()
