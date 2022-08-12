@@ -1,23 +1,20 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import numpy as np
 from tensorflow.keras import layers, models, regularizers
 from tensorflow.keras import optimizers
-from tensorflow.keras.layers import Input, Dense, Activation, ZeroPadding2D, BatchNormalization, Flatten, Conv2D, Conv1D, Convolution2D, Bidirectional, LSTM, GRU, CuDNNLSTM, MaxPooling1D, Add, AlphaDropout
+from tensorflow.keras.layers import Input, Dense, Activation, ZeroPadding2D, BatchNormalization, Flatten, Conv2D, Conv1D, Convolution2D, Bidirectional, LSTM, GRU, MaxPooling1D, Add, AlphaDropout
 from tensorflow.keras.layers import AveragePooling2D, MaxPooling2D, Dropout, GlobalMaxPooling2D, GlobalAveragePooling2D, Masking
 from tensorflow.keras.models import Model
 from tensorflow.keras.preprocessing import image
-from keras.utils import layer_utils
-from keras.utils.data_utils import get_file
-from keras.applications.imagenet_utils import preprocess_input
-import pydot
-from IPython.display import SVG
-from keras.utils.vis_utils import model_to_dot
-from tensorflow.keras.utils import plot_model
+#from keras.utils import layer_utils
+#from keras.utils.data_utils import get_file
+#from keras.applications.imagenet_utils import preprocess_input
+#import pydot
+#from IPython.display import SVG
+#from keras.utils.vis_utils import model_to_dot
+#from tensorflow.keras.utils import plot_model
 
 import tensorflow as tf
 from tensorflow.keras import backend as K
@@ -38,50 +35,48 @@ import h5py
 
 from tensorflow.keras.callbacks import *
 import sys
-# insert at 1, 0 is the script path (or '' in REPL)
-sys.path.insert(1, '../../CLR')
-from clr_callback import *
+from includes.clr_callback import *
 
 
-# In[2]:
-from keras.backend.tensorflow_backend import set_session
 
-config = tf.ConfigProto()
+path = '/home/maria/'
+dataset_path = path + 'Dataset/stft/'
+config = tf.compat.v1.ConfigProto()
 config.gpu_options.allow_growth = True  # dynamically grow the memory used on the GPU
-sess = tf.Session(config=config)
+sess = tf.compat.v1.Session(config=config)
 
 classes = ['LFM','2FSK','4FSK','8FSK', 'Costas','2PSK','4PSK','8PSK','Barker','Huffman','Frank','P1','P2','P3','P4','Px','Zadoff-Chu','T1','T2','T3','T4','NM','ruido']
 dt = np.dtype(float)
 
 
-cw_wv = True
+cw_wv = False
 
 if cw_wv:
-    X_train = np.zeros((117300,128,128), dtype=np.float32)
-    X_test = np.zeros((78200,128,128), dtype=np.float32)
+    X_train = np.zeros((117300,64,64), dtype=np.float32)
+    X_test = np.zeros((39100,64,64), dtype=np.float32)
 else:
-    X_train = np.zeros((117300,128,128,2), dtype=np.float32)
-    X_test = np.zeros((78200,128,128,2), dtype=np.float32)
+    X_train = np.zeros((117300,64,64,2), dtype=np.float32)
+    X_test = np.zeros((39100,64,64,2), dtype=np.float32)
 
 
 indx_train = []
 indx_test = []
 
-with h5py.File('../../Datasets/radar/tfi_128_s/Xc_train.mat', 'r') as f:
-    for i in range(f['Xc_train'].shape[2]):
+with h5py.File(dataset_path + 'Xs_train.mat', 'r') as f:
+    for i in range(f['Xs_train'].shape[2]):
         #print(i)
         #if i != 1562 and i != 8781:
         try:
-            X_train[i,:,:] = f['Xc_train'][:,:,i].T
+            X_train[i,:,:] = f['Xs_train'][:,:,i].T
         except:
             indx_train.append(i)
 
-with h5py.File('../../Datasets/radar/tfi_128_s/Xc_test.mat', 'r') as f:
-    for i in range(f['Xc_test'].shape[2]):
+with h5py.File(dataset_path + 'Xs_test.mat', 'r') as f:
+    for i in range(f['Xs_test'].shape[2]):
         #print(i)
         #if i != 40527 and i != 17204:
         try:
-            X_test[i,:,:] = f['Xc_test'][:,:,i].T
+            X_test[i,:,:] = f['Xs_test'][:,:,i].T
         except:
             indx_test.append(i)
 
@@ -91,13 +86,13 @@ indx_test.sort()
 print(indx_train)
 print(indx_test)
 
-Y_train = sio.loadmat('../../Datasets/radar/tfi_128_s/Y_train.mat')
+Y_train = sio.loadmat(dataset_path + 'Y_train.mat')
 Y_train = Y_train['Y_train']
-Y_test = sio.loadmat('../../Datasets/radar/tfi_128_s/Y_test.mat')
+Y_test = sio.loadmat(dataset_path + 'Y_test.mat')
 Y_test = Y_test['Y_test']
-lbl_train = sio.loadmat('../../Datasets/radar/tfi_128_s/lbl_train.mat')
+lbl_train = sio.loadmat(dataset_path + 'lbl_train.mat')
 lbl_train = lbl_train['lbl_train']
-lbl_test = sio.loadmat('../../Datasets/radar/tfi_128_s/lbl_test.mat')
+lbl_test = sio.loadmat(dataset_path + 'lbl_test.mat')
 lbl_test = lbl_test['lbl_test']
 
 
@@ -107,10 +102,6 @@ Y_train = np.delete(Y_train, indx_train, axis = 0)
 Y_test = np.delete(Y_test, indx_test, axis = 0)
 lbl_train = np.delete(lbl_train, indx_train, axis = 0)
 lbl_test = np.delete(lbl_test, indx_test, axis = 0)
-
-
-# In[3]:
-
 
 if cw_wv:
     X_train = np.reshape(X_train,(X_train.shape[0],X_train.shape[1],X_train.shape[2], 1))
@@ -123,31 +114,12 @@ print("Y test shape: ", Y_test.shape)
 print("Label train shape: ", lbl_train.shape)
 print("Label test shape: ", lbl_test.shape)
 
-
-# In[6]:
-
-
 np.random.seed(2020)
 
 X_train, Y_train, lbl_train = shuffle(X_train[:], Y_train[:], lbl_train[:], random_state = 2020)
 X_test, Y_test, lbl_test = shuffle(X_test[:], Y_test[:], lbl_test[:], random_state = 2020)
 
 
-# In[7]:
-
-
-print(Y_train[:5,:])
-print(lbl_train[:5,:])
-
-
-# In[8]:
-
-
-print(Y_test[:5,:])
-print(lbl_test[:5,:])
-
-
-# In[9]:
 def RecComModel(input_shape):
     """   
     Arguments:
@@ -202,28 +174,11 @@ def RecComModel(input_shape):
     
     return model
 
-# In[38]:
-
-
 model = RecComModel(X_train.shape[1:])
-
-
-# In[43]:
-
-
-output_path = '../Results/Radar_RNN/TFI/cw_128_k11/'
-
-
+output_path = path + 'Results/models_stft'
 clr_triangular = CyclicLR(mode='triangular', base_lr=1e-7, max_lr=1e-4, step_size= 4 * (X_train.shape[0] // 256))
-
 c=[clr_triangular,ModelCheckpoint(filepath= output_path +'best_model.h5', monitor='val_loss', save_best_only=True)]
-
 model.compile(optimizer=optimizers.Adam(1e-7), loss='categorical_crossentropy', metrics=['accuracy'])
-
-
-# In[ ]:
-
-
 Train = True
 
 if Train:
@@ -242,15 +197,7 @@ else:
     with open(output_path +'history_rnn.json', 'r') as f:
             history = json.load(f)
 
-
-# In[33]:
-
-
 model.load_weights(output_path +'best_model.h5')
-
-
-# In[ ]:
-
 
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
@@ -259,10 +206,7 @@ plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['test', 'val'])
 plt.show()
-plt.savefig(output_path + '\graphs\model_loss.pdf')
-
-
-# In[ ]:
+plt.savefig(output_path + 'graphs/model_loss.pdf')
 
 
 def getConfusionMatrixPlot(true_labels, predicted_labels,title):
@@ -305,9 +249,6 @@ def getConfusionMatrixPlot(true_labels, predicted_labels,title):
     return plt
 
 
-# In[ ]:
-
-
 def getFontColor(value):
     if np.isnan(value):
         return "black"
@@ -315,10 +256,6 @@ def getFontColor(value):
         return "black"
     else:
         return "white"
-
-
-
-# In[ ]:
 
 
 acc={}
@@ -335,7 +272,7 @@ for snr in snrs:
     plt.figure(figsize=(width, height))
     plt = getConfusionMatrixPlot(np.argmax(test_Y_i, 1), np.argmax(test_Y_i_hat, 1),title="Confusion Matrix (SNR=%d)"%(snr))
     plt.gcf().subplots_adjust(bottom=0.15)
-    plt.savefig(output_path + '\graphs\confmat_'+str(snr)+'.pdf')
+    plt.savefig(output_path + 'graphs/confmat_'+str(snr)+'.pdf')
     conf = np.zeros([len(classes),len(classes)])
     confnorm = np.zeros([len(classes),len(classes)])
     for i in range(0,test_X_i.shape[0]):
@@ -349,10 +286,6 @@ for snr in snrs:
     ncor = np.sum(conf) - cor 
     print("Overall Accuracy: ", cor / (cor+ncor))
     acc[snr] = 1.0*cor/(cor+ncor)
-#print(acc)
-
-
-# In[ ]:
 
 
 with open(output_path +'acc.json', 'w') as f:
@@ -362,23 +295,4 @@ plt.plot(snrs, list(map(lambda x: acc[x], snrs)))
 plt.xlabel("Signal to Noise Ratio")
 plt.ylabel("Classification Accuracy")
 plt.title("Classification Accuracy on Radar Dataset")
-plt.savefig(output_path + '\graphs\clas_acc.pdf')
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
+plt.savefig(output_path + 'graphs/clas_acc.pdf')

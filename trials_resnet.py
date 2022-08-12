@@ -13,8 +13,8 @@ from typing import Any, Dict
 from includes.clr_callback import *
 import matplotlib.pyplot as plt
 
-path = '/home/usuario_gmr/gmr/'
-dataset_path = path
+path = '/home/maria/'
+dataset_path = path + 'Dataset/'
 
 with h5py.File(dataset_path +'X_train.mat', 'r') as f:
     X_train = np.array(f['X_train']).T
